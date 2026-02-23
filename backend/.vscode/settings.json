@@ -1,0 +1,7 @@
+{
+    "python.analysis.extraPaths": [
+        "C:\\Users\\Admin\\Desktop\\inspiration-analyzer\\backend\\venv310\\Lib\\site-packages"
+    ],
+    "python.analysis.useLibraryCodeForTypes": true
+}
+
