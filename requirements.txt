@@ -32,7 +32,7 @@ matplotlib==3.10.6
 mediapipe==0.10.32
 ml_dtypes==0.5.3
 msgpack==1.1.1
-numba==0.62.1
+numba==0.63.0
 numpy==1.26.4
 opencv-contrib-python==4.11.0.86
 opencv-python==4.11.0.86
