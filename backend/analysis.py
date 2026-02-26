@@ -1,11 +1,11 @@
 import os
 import cv2
-import mediapipe as mp
+# import mediapipe as mp  # Commented - too heavy for Render free tier
 import tempfile
 import numpy as np
-import librosa
-import whisper
-import torch
+# import librosa  # Commented - too heavy for Render free tier
+# import whisper  # Commented - not available, use alternatives
+# import torch  # Commented - not in requirements
 from flask import Flask, request
 from flask_socketio import SocketIO, emit
 from flask_cors import CORS
@@ -14,7 +14,7 @@ import traceback
 import time
 import base64
 from concurrent.futures import ThreadPoolExecutor
-import soundfile as sf
+# import soundfile as sf  # Commented - audio processing removed
 
 # Configure logging
 logging.basicConfig(
