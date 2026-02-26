@@ -327,20 +327,35 @@ def health_check():
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def index(path):
-    """Serve React frontend or return API info"""
-    # Check if requesting static assets
+    """Serve React frontend"""
+    import os
+    
+    # Build path to dist folder (one level up from backend directory)
+    base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    dist_path = os.path.join(base_path, 'dist')
+    
+    # For static files, serve them directly
     if path and path != 'index.html':
-        dist_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'dist', path)
-        if os.path.isfile(dist_path):
-            return send_from_directory(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'dist'), path)
+        file_path = os.path.join(dist_path, path)
+        if os.path.isfile(file_path):
+            return send_from_directory(dist_path, path)
     
-    # Serve index.html for root and all other paths (React Router)
-    dist_index = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'dist', 'index.html')
-    if os.path.isfile(dist_index):
-        return send_from_directory(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'dist'), 'index.html')
+    # For all other routes, serve index.html (React Router)
+    index_file = os.path.join(dist_path, 'index.html')
+    try:
+        if os.path.isfile(index_file):
+            logger.info(f"Serving frontend from {index_file}")
+            return send_from_directory(dist_path, 'index.html')
+        else:
+            logger.warning(f"index.html not found at {index_file}")
+            logger.warning(f"dist_path: {dist_path}, exists: {os.path.isdir(dist_path)}")
+            if os.path.isdir(dist_path):
+                logger.warning(f"Contents of dist: {os.listdir(dist_path)}")
+    except Exception as e:
+        logger.error(f"Error serving frontend: {e}")
     
-    # Fallback to API info if dist not built
-    return jsonify({"message": "Inspiration Analyzer API", "status": "running"})
+    # Fallback
+    return jsonify({"message": "Inspiration Analyzer API", "status": "running", "error": "Frontend not built"}), 503
 
 # ===============================
 # Main
