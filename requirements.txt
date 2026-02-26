@@ -48,7 +48,7 @@ pyparsing==3.2.5
 python-dateutil==2.9.0.post0
 python-engineio==4.12.3
 python-socketio==5.14.1
-requests==2.32.0
+requests==2.32.3
 # scikit-learn==1.5.2  # Heavy ML library, might fail to build
 # scipy==1.14.1  # Heavy scientific library
 sentencepiece==0.2.0

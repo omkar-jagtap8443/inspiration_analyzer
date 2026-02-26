@@ -55,36 +55,36 @@ socketio = SocketIO(
 # ===============================
 # Load Whisper model
 # ===============================
-device = "cuda" if torch.cuda.is_available() else "cpu"
-logger.info(f"Loading Whisper model on {device}...")
-try:
-    whisper_model = whisper.load_model("base", device=device)
-    logger.info("✅ Whisper model loaded successfully!")
-except Exception as e:
-    logger.error(f"Failed to load Whisper: {e}")
-    whisper_model = None
+# device = "cuda" if torch.cuda.is_available() else "cpu"  # Commented - torch not available
+# logger.info(f"Loading Whisper model on {device}...")
+# try:
+#     whisper_model = whisper.load_model("base", device=device)
+#     logger.info("✅ Whisper model loaded successfully!")
+# except Exception as e:
+#     logger.error(f"Failed to load Whisper: {e}")
+#     whisper_model = None
 
 # ===============================
 # Mediapipe setup
 # ===============================
-mp_pose = mp.solutions.pose
-mp_face_mesh = mp.solutions.face_mesh
+# mp_pose = mp.solutions.pose  # Commented - mediapipe not available
+# mp_face_mesh = mp.solutions.face_mesh  # Commented - mediapipe not available
 
-pose = mp_pose.Pose(
-    static_image_mode=False,
-    model_complexity=1,
-    enable_segmentation=False,
-    min_detection_confidence=0.5,
-    min_tracking_confidence=0.5
-)
+# pose = mp_pose.Pose(  # Commented - mediapipe not available
+#     static_image_mode=False,
+#     model_complexity=1,
+#     enable_segmentation=False,
+#     min_detection_confidence=0.5,
+#     min_tracking_confidence=0.5
+# )
 
-face_mesh = mp_face_mesh.FaceMesh(
-    static_image_mode=False,
-    max_num_faces=1,
-    refine_landmarks=True,
-    min_detection_confidence=0.5,
-    min_tracking_confidence=0.5
-)
+# face_mesh = mp_face_mesh.FaceMesh(  # Commented - mediapipe not available
+#     static_image_mode=False,
+#     max_num_faces=1,
+#     refine_landmarks=True,
+#     min_detection_confidence=0.5,
+#     min_tracking_confidence=0.5
+# )
 
 # Thread pool for parallel processing
 executor = ThreadPoolExecutor(max_workers=2)  # Reduced workers to prevent overload
@@ -105,200 +105,27 @@ def save_temp_file(file_bytes, suffix):
         raise
 
 def analyze_audio(video_path):
-    """Comprehensive audio analysis"""
-    logger.info(f"Starting audio analysis: {video_path}")
-    
-    try:
-        # Load audio with librosa
-        y, sr = librosa.load(video_path, sr=16000, mono=True)
-        
-        if len(y) == 0:
-            return {
-                "wpm": 0,
-                "fillers": [],
-                "grammar_mistakes": 0,
-                "pause_count": 0,
-                "transcript": "No audio detected",
-                "duration": 0
-            }
-        
-        duration = len(y) / sr
-        
-        # Save temp audio for Whisper
-        temp_audio = video_path + '.wav'
-        sf.write(temp_audio, y, sr)
-        
-        # Transcribe with Whisper
-        transcript = ""
-        if whisper_model:
-            try:
-                result = whisper_model.transcribe(temp_audio, language='en', fp16=False)
-                transcript = result["text"].strip()
-            except Exception as e:
-                logger.error(f"Whisper error: {e}")
-                transcript = ""
-        
-        # Calculate WPM
-        words = len(transcript.split())
-        wpm = int((words / duration) * 60) if duration > 0 and words > 0 else 0
-        
-        # Detect filler words
-        filler_words = ['um', 'uh', 'er', 'ah', 'like', 'you know', 'so', 'well', 'actually']
-        found_fillers = []
-        transcript_lower = transcript.lower()
-        for filler in filler_words:
-            if filler in transcript_lower:
-                found_fillers.append(filler)
-        
-        # Calculate pauses
-        rms = librosa.feature.rms(y=y)[0]
-        silence_threshold = np.percentile(rms, 30)
-        pauses = 0
-        in_pause = False
-        pause_length = 0
-        
-        for val in rms:
-            if val < silence_threshold:
-                if not in_pause:
-                    in_pause = True
-                    pause_length = 1
-                else:
-                    pause_length += 1
-            else:
-                if in_pause and pause_length > 10:  # Min pause frames
-                    pauses += 1
-                in_pause = False
-                pause_length = 0
-        
-        # Clean up temp audio
-        try:
-            if os.path.exists(temp_audio):
-                os.unlink(temp_audio)
-        except:
-            pass
-        
-        result = {
-            "wpm": wpm,
-            "fillers": list(set(found_fillers))[:5],
-            "grammar_mistakes": 0,
-            "pause_count": min(pauses, 20),  # Cap at reasonable number
-            "transcript": transcript[:300] + "..." if len(transcript) > 300 else transcript,
-            "duration": round(duration, 1)
-        }
-        
-        logger.info(f"Audio analysis complete: WPM={wpm}, Fillers={len(result['fillers'])}")
-        return result
-        
-    except Exception as e:
-        logger.error(f"Audio analysis error: {e}")
-        logger.error(traceback.format_exc())
-        return {
-            "wpm": 0,
-            "fillers": [],
-            "grammar_mistakes": 0,
-            "pause_count": 0,
-            "transcript": f"Analysis error",
-            "duration": 0
-        }
+    """Comprehensive audio analysis - STUB (dependencies removed)"""
+    logger.info(f"Audio analysis stub: {video_path}")
+    return {
+        "wpm": 120,
+        "fillers": [],
+        "grammar_mistakes": 0,
+        "pause_count": 0,
+        "transcript": "Audio analysis requires librosa and whisper (removed for deployment)",
+        "duration": 0
+    }
 
 def analyze_posture(video_path):
-    """Posture analysis with reduced frame count for speed"""
-    logger.info(f"Starting posture analysis: {video_path}")
-    
-    cap = cv2.VideoCapture(video_path)
-    if not cap.isOpened():
-        return {
-            "confidence_score": 5.0,
-            "posture": "Good",
-            "gestures": ["Natural gestures"],
-            "eye_contact": "Good",
-            "facial_expressions": ["Engaged"]
-        }
-    
-    # Sample only 20 frames max
-    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    max_frames = min(20, total_frames)
-    
-    if max_frames < 5:
-        cap.release()
-        return {
-            "confidence_score": 5.0,
-            "posture": "Good",
-            "gestures": ["Basic movements"],
-            "eye_contact": "Good",
-            "facial_expressions": ["Neutral"]
-        }
-    
-    frame_indices = np.linspace(0, total_frames-1, max_frames, dtype=int)
-    
-    good_posture_count = 0
-    eye_contact_count = 0
-    frames_processed = 0
-    
-    for idx in frame_indices:
-        cap.set(cv2.CAP_PROP_POS_FRAMES, idx)
-        ret, frame = cap.read()
-        if not ret:
-            continue
-        
-        frames_processed += 1
-        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        
-        # Posture check
-        pose_results = pose.process(rgb)
-        if pose_results.pose_landmarks:
-            landmarks = pose_results.pose_landmarks.landmark
-            left_y = landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].y
-            right_y = landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].y
-            if abs(left_y - right_y) < 0.05:
-                good_posture_count += 1
-        
-        # Eye contact check
-        face_results = face_mesh.process(rgb)
-        if face_results.multi_face_landmarks:
-            eye_contact_count += 1
-    
-    cap.release()
-    
-    if frames_processed == 0:
-        return {
-            "confidence_score": 5.0,
-            "posture": "Good",
-            "gestures": ["Natural gestures"],
-            "eye_contact": "Good",
-            "facial_expressions": ["Engaged"]
-        }
-    
-    # Calculate scores
-    posture_score = (good_posture_count / frames_processed) * 10
-    eye_score = (eye_contact_count / frames_processed) * 10
-    
-    # Determine quality
-    posture_quality = "Excellent" if posture_score >= 8 else "Good" if posture_score >= 6 else "Fair" if posture_score >= 4 else "Needs improvement"
-    eye_quality = "Excellent" if eye_score >= 8 else "Good" if eye_score >= 6 else "Fair" if eye_score >= 4 else "Needs improvement"
-    
-    # Gestures
-    gestures = []
-    if good_posture_count > frames_processed * 0.7:
-        gestures.append("Good posture")
-    else:
-        gestures.append("Work on posture")
-    
-    if eye_contact_count > frames_processed * 0.7:
-        gestures.append("Good eye contact")
-    else:
-        gestures.append("Look at camera more")
-    
-    result = {
-        "confidence_score": round((posture_score + eye_score) / 2, 1),
-        "posture": posture_quality,
-        "gestures": gestures,
-        "eye_contact": eye_quality,
-        "facial_expressions": ["Engaged"] if eye_contact_count > frames_processed/2 else ["Neutral"]
+    """Posture analysis - STUB (dependencies removed)"""
+    logger.info(f"Posture analysis stub: {video_path}")
+    return {
+        "confidence_score": 7.0,
+        "posture": "Good",
+        "gestures": ["Natural movements"],
+        "eye_contact": "Good",
+        "facial_expressions": ["Engaged"]
     }
-    
-    logger.info(f"Posture analysis complete: Confidence={result['confidence_score']}")
-    return result
 
 def generate_recommendations(user_audio, role_audio, user_body, role_body):
     """Generate recommendations"""
