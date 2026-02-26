@@ -1,9 +1,22 @@
 services:
   - type: web
     name: inspiration-analyzer
-    env: python
     runtime: python-3.13
-    buildCommand: "npm install && npm run build && pip install -r requirements.txt"
+    buildCommand: |
+      echo "PWD: $(pwd)" &&
+      echo "Listing files:" &&
+      ls -la &&
+      echo "Installing Node modules..." &&
+      npm ci &&
+      echo "Building React app..." &&
+      npm run build &&
+      echo "Build complete, checking dist:" &&
+      ls -la dist &&
+      echo "Installing Python dependencies..." &&
+      pip install -r requirements.txt &&
+      echo "All done!"
     startCommand: "python app.py"
+
+
 
 
