@@ -330,9 +330,41 @@ def index(path):
     """Serve React frontend"""
     import os
     
-    # Build path to dist folder (one level up from backend directory)
-    base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    dist_path = os.path.join(base_path, 'dist')
+    # Build path to dist folder - it's at the project root, not in backend
+    # backend directory is at: /opt/render/project/src/backend
+    # dist directory should be at: /opt/render/project/src/dist
+    backend_dir = os.path.dirname(os.path.abspath(__file__))  # /opt/render/project/src/backend
+    project_root = os.path.dirname(backend_dir)  # /opt/render/project/src (if run from there)
+    
+    # Try multiple possible locations
+    possible_dist_paths = [
+        os.path.join(project_root, 'dist'),  # /opt/render/project/src/dist
+        os.path.join(os.path.dirname(project_root), 'dist'),  # /opt/render/project/dist
+        os.path.join(os.path.dirname(project_root), 'src', 'dist'),  # /opt/render/project/src/dist
+        '/opt/render/project/dist',  # Direct path
+    ]
+    
+    dist_path = None
+    for path_candidate in possible_dist_paths:
+        if os.path.isdir(path_candidate):
+            dist_path = path_candidate
+            logger.info(f"Found dist folder at: {dist_path}")
+            break
+    
+    if not dist_path:
+        logger.warning(f"dist folder not found. Tried: {possible_dist_paths}")
+        logger.warning(f"Current working directory: {os.getcwd()}")
+        logger.warning(f"Project root: {project_root}")
+        return jsonify({
+            "error": "Frontend not built",
+            "message": "Inspiration Analyzer API",
+            "status": "running",
+            "debug": {
+                "backend_dir": backend_dir,
+                "project_root": project_root,
+                "tried_paths": possible_dist_paths
+            }
+        }), 503
     
     # For static files, serve them directly
     if path and path != 'index.html':
@@ -342,20 +374,16 @@ def index(path):
     
     # For all other routes, serve index.html (React Router)
     index_file = os.path.join(dist_path, 'index.html')
-    try:
-        if os.path.isfile(index_file):
-            logger.info(f"Serving frontend from {index_file}")
-            return send_from_directory(dist_path, 'index.html')
-        else:
-            logger.warning(f"index.html not found at {index_file}")
-            logger.warning(f"dist_path: {dist_path}, exists: {os.path.isdir(dist_path)}")
-            if os.path.isdir(dist_path):
-                logger.warning(f"Contents of dist: {os.listdir(dist_path)}")
-    except Exception as e:
-        logger.error(f"Error serving frontend: {e}")
-    
-    # Fallback
-    return jsonify({"message": "Inspiration Analyzer API", "status": "running", "error": "Frontend not built"}), 503
+    if os.path.isfile(index_file):
+        logger.info(f"Serving index.html from {index_file}")
+        return send_from_directory(dist_path, 'index.html')
+    else:
+        logger.error(f"index.html not found at {index_file}")
+        return jsonify({
+            "error": "index.html not found",
+            "message": "Frontend build incomplete",
+            "status": "running"
+        }), 503
 
 # ===============================
 # Main
