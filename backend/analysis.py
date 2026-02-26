@@ -6,7 +6,7 @@ import numpy as np
 # import librosa  # Commented - too heavy for Render free tier
 # import whisper  # Commented - not available, use alternatives
 # import torch  # Commented - not in requirements
-from flask import Flask, request
+from flask import Flask, request, send_from_directory, jsonify
 from flask_socketio import SocketIO, emit
 from flask_cors import CORS
 import logging
@@ -324,9 +324,23 @@ def handle_start_analysis(data):
 def health_check():
     return {"status": "healthy", "message": "Server is running"}
 
-@app.route('/')
-def index():
-    return {"message": "Inspiration Analyzer API", "status": "running"}
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def index(path):
+    """Serve React frontend or return API info"""
+    # Check if requesting static assets
+    if path and path != 'index.html':
+        dist_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'dist', path)
+        if os.path.isfile(dist_path):
+            return send_from_directory(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'dist'), path)
+    
+    # Serve index.html for root and all other paths (React Router)
+    dist_index = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'dist', 'index.html')
+    if os.path.isfile(dist_index):
+        return send_from_directory(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'dist'), 'index.html')
+    
+    # Fallback to API info if dist not built
+    return jsonify({"message": "Inspiration Analyzer API", "status": "running"})
 
 # ===============================
 # Main
